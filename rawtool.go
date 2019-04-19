@@ -1,9 +1,10 @@
 package main
 
 import (
-	"enricod/golibraw"
 	"fmt"
 	"os"
+
+	"github.com/enricod/golibraw"
 )
 
 func main() {
