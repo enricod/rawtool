@@ -17,6 +17,10 @@ import (
 	"github.com/nfnt/resize"
 )
 
+func extensions() []string {
+	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
+}
+
 type Settings struct {
 	ImagesDir string
 	WorkDir   string
@@ -220,10 +224,6 @@ func dirSelectionChanged(widget *gtk.FileChooserButton) {
 	//DoExtract(widget.GetFilename())
 }
 
-func extensions() []string {
-	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
-}
-
 // IsStringInSlice true if the slice contains the string a
 func IsStringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -296,7 +296,7 @@ func writeAsThumb(filename os.FileInfo, img *image.Image) error {
 		fmt.Println(err)
 		return err
 	}
-	log.Printf("saved thumbnail %s, took %v", outfilename, time.Since(t0))
+	log.Printf("    created and saved thumbnail %s, required %v", filename.Name(), time.Since(t0))
 	return nil
 }
 
