@@ -15,7 +15,6 @@ import (
 	"github.com/enricod/golibraw"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/nfnt/resize"
-	"github.com/pkg/profile"
 )
 
 type Settings struct {
@@ -32,7 +31,7 @@ type myImage struct {
 var appSettings Settings
 var flowbox *gtk.FlowBox
 
-func CreateDirIfNotExist(dir string) {
+func createDirIfNotExist(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
@@ -42,7 +41,7 @@ func CreateDirIfNotExist(dir string) {
 }
 
 func main() {
-	defer profile.Start(profile.MemProfile).Stop()
+	//defer profile.Start(profile.MemProfile).Stop()
 
 	imagesdir := flag.String("d", ".", "outputdir")
 	flag.Parse()
@@ -54,44 +53,47 @@ func main() {
 	fmt.Println(dir)
 
 	outdir := fmt.Sprint(dir, "/", ".rawtool")
-	CreateDirIfNotExist(outdir)
+	createDirIfNotExist(outdir)
 
 	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: dir, OutDir: outdir}
-	gtk.Init(nil)
-
-	// Create a new toplevel window, set its title, and connect it to the
-	// "destroy" signal to exit the GTK main loop when it is destroyed.
-	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
-	if err != nil {
-		log.Fatal("Unable to create window:", err)
-	}
-	win.SetTitle("Simple Example")
-	win.Connect("destroy", func() {
-		gtk.MainQuit()
-	})
-
-	// Create a new label widget to show in the window.
 	/*
-		l, err := gtk.LabelNew("Hello, gotk3!")
+		gtk.Init(nil)
+
+		// Create a new toplevel window, set its title, and connect it to the
+		// "destroy" signal to exit the GTK main loop when it is destroyed.
+		win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
 		if err != nil {
-			log.Fatal("Unable to create label:", err)
+			log.Fatal("Unable to create window:", err)
 		}
+		win.SetTitle("Simple Example")
+		win.Connect("destroy", func() {
+			gtk.MainQuit()
+		})
+
+		// Create a new label widget to show in the window.
+
+			l, err := gtk.LabelNew("Hello, gotk3!")
+			if err != nil {
+				log.Fatal("Unable to create label:", err)
+			}
+
+
+		// Add the label to the window.
+		win.Add(mainPanel())
+
+		// Set the default window size.
+		win.SetDefaultSize(800, 600)
+
+		// Recursively show all widgets contained in this window.
+		win.ShowAll()
+
+
+		// Begin executing the GTK main loop.  This blocks until
+		// gtk.MainQuit() is run.
+		gtk.Main()
 	*/
 
-	// Add the label to the window.
-	win.Add(mainPanel())
-
-	// Set the default window size.
-	win.SetDefaultSize(800, 600)
-
-	// Recursively show all widgets contained in this window.
-	win.ShowAll()
-
-	ReadImagesInDir(appSettings.WorkDir)
-	// Begin executing the GTK main loop.  This blocks until
-	// gtk.MainQuit() is run.
-	gtk.Main()
-
+	readImagesInDir(appSettings.WorkDir)
 	/*
 		fileInfo, err := os.Stat("./_7070001.ORF")
 		if os.IsNotExist(err) {
@@ -232,16 +234,15 @@ func IsStringInSlice(a string, list []string) bool {
 	return false
 }
 
-func ReadImagesInDir(dirname string) ([]myImage, error) {
+func readImagesInDir(dirname string) ([]myImage, error) {
 	files, err := ioutil.ReadDir(dirname)
 
-	result := make([]myImage, 5)
+	result := make([]myImage, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, f := range files {
-
 		if IsStringInSlice(filepath.Ext(f.Name()), extensions()) {
 			log.Printf("loading %s ...\n", f.Name())
 			img, err2 := golibraw.Raw2Image(appSettings.WorkDir, f)
@@ -251,7 +252,6 @@ func ReadImagesInDir(dirname string) ([]myImage, error) {
 			} else {
 				log.Printf("error decoding %s \n", f.Name())
 			}
-
 		}
 	}
 	/*
