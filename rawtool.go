@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -13,10 +14,14 @@ import (
 
 	"github.com/enricod/golibraw"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/nfnt/resize"
+	"github.com/pkg/profile"
 )
 
 type Settings struct {
 	ImagesDir string
+	WorkDir   string
+	OutDir    string
 }
 
 type myImage struct {
@@ -27,9 +32,31 @@ type myImage struct {
 var appSettings Settings
 var flowbox *gtk.FlowBox
 
-func main() {
+func CreateDirIfNotExist(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
 
-	appSettings := Settings{ImagesDir: "."}
+func main() {
+	defer profile.Start(profile.MemProfile).Stop()
+
+	imagesdir := flag.String("d", ".", "outputdir")
+	flag.Parse()
+
+	dir, err := filepath.Abs(filepath.Dir(*imagesdir))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(dir)
+
+	outdir := fmt.Sprint(dir, "/", ".rawtool")
+	CreateDirIfNotExist(outdir)
+
+	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: dir, OutDir: outdir}
 	gtk.Init(nil)
 
 	// Create a new toplevel window, set its title, and connect it to the
@@ -60,7 +87,7 @@ func main() {
 	// Recursively show all widgets contained in this window.
 	win.ShowAll()
 
-	go ReadImagesInDir(appSettings.ImagesDir)
+	ReadImagesInDir(appSettings.WorkDir)
 	// Begin executing the GTK main loop.  This blocks until
 	// gtk.MainQuit() is run.
 	gtk.Main()
@@ -216,17 +243,15 @@ func ReadImagesInDir(dirname string) ([]myImage, error) {
 	for _, f := range files {
 
 		if IsStringInSlice(filepath.Ext(f.Name()), extensions()) {
-			log.Printf("%s \n", f.Name())
-
-			log.Printf("caricamento %s\n", f.Name())
-			img, err2 := golibraw.Raw2Image(".", f)
+			log.Printf("loading %s ...\n", f.Name())
+			img, err2 := golibraw.Raw2Image(appSettings.WorkDir, f)
 			if err2 == nil {
-				result = append(result, myImage{Image: img, Filename: f})
-
-				go writeAsJpeg(f, img)
+				//result = append(result, myImage{Image: img, Filename: f})
+				writeAsThumb(f, &img)
 			} else {
 				log.Printf("error decoding %s \n", f.Name())
 			}
+
 		}
 	}
 	/*
@@ -242,6 +267,37 @@ func ReadImagesInDir(dirname string) ([]myImage, error) {
 		}
 	*/
 	return result, nil
+}
+
+func writeAsThumb(filename os.FileInfo, img *image.Image) error {
+	t0 := time.Now()
+	var opt jpeg.Options
+
+	opt.Quality = 75
+	// ok, write out the data into the new JPEG file
+
+	rand.Seed(time.Now().UTC().UnixNano())
+	outfilename := fmt.Sprint(appSettings.OutDir, "/", filename.Name(), ".thumb.jpg")
+	out, err := os.Create(outfilename)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// check err
+
+	newImage := resize.Resize(1024, 0, *img, resize.Lanczos3)
+
+	// Encode uses a Writer, use a Buffer if you need the raw []byte
+	//err = jpeg.Encode(someWriter, newImage, nil)
+
+	err = jpeg.Encode(out, newImage, &opt) // put quality to 80%
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	log.Printf("saved thumbnail %s, took %v", outfilename, time.Since(t0))
+	return nil
 }
 
 func writeAsJpeg(filename os.FileInfo, img image.Image) error {
