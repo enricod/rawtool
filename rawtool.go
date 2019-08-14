@@ -60,44 +60,36 @@ func main() {
 	createDirIfNotExist(outdir)
 
 	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: dir, OutDir: outdir}
-	/*
-		gtk.Init(nil)
 
-		// Create a new toplevel window, set its title, and connect it to the
-		// "destroy" signal to exit the GTK main loop when it is destroyed.
-		win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
-		if err != nil {
-			log.Fatal("Unable to create window:", err)
-		}
-		win.SetTitle("Simple Example")
-		win.Connect("destroy", func() {
-			gtk.MainQuit()
-		})
+	go readImagesInDir(appSettings.WorkDir)
+	gtk.Init(nil)
 
-		// Create a new label widget to show in the window.
+	// Create a new toplevel window, set its title, and connect it to the
+	// "destroy" signal to exit the GTK main loop when it is destroyed.
+	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
+	if err != nil {
+		log.Fatal("Unable to create window:", err)
+	}
+	win.SetTitle("Simple Example")
+	win.Connect("destroy", func() {
+		gtk.MainQuit()
+	})
 
-			l, err := gtk.LabelNew("Hello, gotk3!")
-			if err != nil {
-				log.Fatal("Unable to create label:", err)
-			}
+	// Create a new label widget to show in the window.
 
+	// Add the label to the window.
+	win.Add(mainPanel())
 
-		// Add the label to the window.
-		win.Add(mainPanel())
+	// Set the default window size.
+	win.SetDefaultSize(800, 600)
 
-		// Set the default window size.
-		win.SetDefaultSize(800, 600)
+	// Recursively show all widgets contained in this window.
+	win.ShowAll()
 
-		// Recursively show all widgets contained in this window.
-		win.ShowAll()
+	// Begin executing the GTK main loop.  This blocks until
+	// gtk.MainQuit() is run.
+	gtk.Main()
 
-
-		// Begin executing the GTK main loop.  This blocks until
-		// gtk.MainQuit() is run.
-		gtk.Main()
-	*/
-
-	readImagesInDir(appSettings.WorkDir)
 	/*
 		fileInfo, err := os.Stat("./_7070001.ORF")
 		if os.IsNotExist(err) {
@@ -187,22 +179,23 @@ func mainPanel() *gtk.Widget {
 	s = "Hyperlink to <a href=\"https://www.cyphertite.com/\">Cyphertite</a> for your clicking pleasure"
 	label.SetMarkup(s)
 	grid.AttachNextTo(label, sb, gtk.POS_BOTTOM, 2, 1)
-	/*
-		dirChooserBtn, err := gtk.FileChooserButtonNew("Dir selection", gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
-		if err != nil {
-			log.Fatal("Unable to create FileChooserDialogNewWith1Button:", err)
 
-		}
-		dirChooserBtn.Connect("selection-changed", dirSelectionChanged)
-		grid.Add(dirChooserBtn)
-	*/
+	dirChooserBtn, err := gtk.FileChooserButtonNew("Dir selection", gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+	if err != nil {
+		log.Fatal("Unable to create FileChooserDialogNewWith1Button:", err)
+
+	}
+	dirChooserBtn.Connect("selection-changed", dirSelectionChanged)
+	// grid.Add(dirChooserBtn)
+	grid.AttachNextTo(dirChooserBtn, label, gtk.POS_BOTTOM, 3, 1)
+
 	// Some GTK callback functions require arguments, such as the
 	// 'gchar *uri' argument of GtkLabel's "activate-link" signal.
 	// These can be used by using the equivalent go type (in this case,
 	// a string) as a closure argument.
-	label.Connect("activate-link", func(_ *gtk.Label, uri string) {
-		fmt.Println("you clicked a link to:", uri)
-	})
+	//label.Connect("activate-link", func(_ *gtk.Label, uri string) {
+	//	fmt.Println("you clicked a link to:", uri)
+	//})
 
 	horBox.PackStart(grid, false, true, 6)
 
