@@ -15,6 +15,7 @@ import (
 	"github.com/enricod/golibraw"
 	"github.com/gotk3/gotk3/gtk" //"github.com/gotk3/gotk3/gtk"
 	"github.com/nfnt/resize"
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -71,8 +72,8 @@ func main() {
 	// with a minimum size of 250*200
 	// and sets the title to "Hello Widgets Example"
 	window := widgets.NewQMainWindow(nil, 0)
-	window.SetMinimumSize2(250, 200)
-	window.SetWindowTitle("Hello Widgets Example")
+	window.SetMinimumSize2(1024, 800)
+	window.SetWindowTitle("RawTool")
 
 	// create a regular widget
 	// give it a QVBoxLayout
@@ -93,7 +94,12 @@ func main() {
 	// and add it to the central widgets layout
 	button := widgets.NewQPushButton2("and click me!", nil)
 	button.ConnectClicked(func(bool) {
-		widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
+
+		dialog := widgets.NewQFileDialog(window, core.Qt__Dialog)
+		dialog.OpenDefault()
+		dialog.ConnectFileSelected(dirSelected)
+
+		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
 	})
 	widget.Layout().AddWidget(button)
 
@@ -105,6 +111,10 @@ func main() {
 	// or the window is closed by the user
 	app.Exec()
 
+}
+
+func dirSelected(dirname string) {
+	log.Println("dir ", dirname)
 }
 
 // IsStringInSlice true if the slice contains the string a
