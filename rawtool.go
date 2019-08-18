@@ -59,19 +59,24 @@ func createUi() {
 	window.SetMinimumSize2(1024, 800)
 	window.SetWindowTitle("RawTool")
 
+	mainWidget := widgets.NewQWidget(nil, 0)
+	mainWidget.SetLayout(widgets.NewQHBoxLayout())
+	window.SetCentralWidget(mainWidget)
+
 	// create a regular widget
 	// give it a QVBoxLayout
 	// and make it the central widget of the window
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetLayout(widgets.NewQVBoxLayout())
-	window.SetCentralWidget(widget)
+	leftWidget := widgets.NewQWidget(mainWidget, 0)
+	leftWidget.SetLayout(widgets.NewQVBoxLayout())
+	mainWidget.Layout().AddWidget(leftWidget)
+	//leftWidget.SetCentralWidget(leftWidget)
 
 	// create a line edit
 	// with a custom placeholder text
 	// and add it to the central widgets layout
 	input := widgets.NewQLineEdit(nil)
 	input.SetPlaceholderText("Write something ...")
-	widget.Layout().AddWidget(input)
+	leftWidget.Layout().AddWidget(input)
 
 	// create a button
 	// connect the clicked signal
@@ -98,7 +103,18 @@ func createUi() {
 
 		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
 	})
-	widget.Layout().AddWidget(button)
+	leftWidget.Layout().AddWidget(button)
+
+	rightWidget := widgets.NewQWidget(mainWidget, 0)
+	rightWidget.SetLayout(widgets.NewQVBoxLayout())
+	mainWidget.Layout().AddWidget(rightWidget)
+
+	imageLabel := widgets.NewQLabel(nil, 0)
+	//imageLabel.SetText("hhhhh")
+	loaded := imageLabel.Pixmap().Load("/home/enrico/Pictures/_DSF4844-2000.jpg", "JPG", 1)
+	log.Printf("image loaded %v \n", loaded)
+	//
+	rightWidget.Layout().AddWidget(imageLabel)
 
 	// make the window visible
 	window.Show()
@@ -130,6 +146,7 @@ func main() {
 
 }
 
+// called when user selects a directory
 func dirSelected(dirname string) {
 	log.Printf("selected dir %s \n", dirname)
 	myImages, err := readImagesInDir(dirname)
@@ -283,7 +300,7 @@ func writeThumb(path string, filename string, img *image.Image) error {
 	// ok, write out the data into the new JPEG file
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	outfilename := fmt.Sprint(appSettings.OutDir, "/", filename, ".thumb.jpg")
+	outfilename := fmt.Sprint(appSettings.WorkDir, "/", filename, ".thumb.jpg")
 	out, err := os.Create(outfilename)
 	if err != nil {
 		fmt.Println(err)
@@ -314,7 +331,7 @@ func writeAsThumb(filename os.FileInfo, img *image.Image) error {
 	// ok, write out the data into the new JPEG file
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	outfilename := fmt.Sprint(appSettings.OutDir, "/", filename.Name(), ".thumb.jpg")
+	outfilename := fmt.Sprint(appSettings.WorkDir, "/", filename.Name(), ".thumb.jpg")
 	out, err := os.Create(outfilename)
 	if err != nil {
 		fmt.Println(err)
