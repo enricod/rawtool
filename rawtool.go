@@ -82,8 +82,19 @@ func createUi() {
 		// dialog.OpenDefault()
 		// dialog.ConnectFileSelected(dirSelected)
 
-		selecteddir := widgets.QFileDialog_GetExistingDirectory(window, "select dir", appSettings.ImagesDir, 1)
-		dirSelected(selecteddir)
+		var selecteddir string
+		selecteddir = widgets.QFileDialog_GetExistingDirectory(window, "select dir", appSettings.ImagesDir, 1)
+
+		if !strings.HasSuffix(selecteddir, "/") {
+			selecteddir = selecteddir + "/"
+		}
+
+		go processImagesInDir(selecteddir)
+
+		imagesInWotkDir, _ := readImagesInWorkDir(selecteddir)
+		for _, i := range imagesInWotkDir {
+			log.Printf("img %s", i.Name())
+		}
 
 		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
 	})
@@ -121,7 +132,7 @@ func main() {
 
 func dirSelected(dirname string) {
 	log.Printf("selected dir %s \n", dirname)
-	go readImagesInDir(dirname)
+	go processImagesInDir(dirname)
 }
 
 // IsStringInSlice true if the slice contains the string a
@@ -142,7 +153,17 @@ func FileExists(name string) bool {
 	}
 	return true
 }
-func readImagesInDir(dirname string) ([]myImage, error) {
+
+func readImagesInWorkDir(dirname string) ([]os.FileInfo, error) {
+	files, _ := ioutil.ReadDir(dirname + "/.rawtool")
+	result := []os.FileInfo{}
+	for _, f := range files {
+		result = append(result, f)
+	}
+	return result, nil
+}
+
+func processImagesInDir(dirname string) ([]myImage, error) {
 	files, err := ioutil.ReadDir(dirname)
 
 	result := make([]myImage, 1)
