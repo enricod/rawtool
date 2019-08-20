@@ -16,6 +16,8 @@ import (
 	"github.com/enricod/golibraw"
 	"github.com/gotk3/gotk3/gtk" //"github.com/gotk3/gotk3/gtk"
 	"github.com/nfnt/resize"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -110,9 +112,14 @@ func createUi() {
 	mainWidget.Layout().AddWidget(rightWidget)
 
 	imageLabel := widgets.NewQLabel(nil, 0)
+
 	//imageLabel.SetText("hhhhh")
-	loaded := imageLabel.Pixmap().Load("/home/enrico/Pictures/_DSF4844-2000.jpg", "JPG", 1)
-	log.Printf("image loaded %v \n", loaded)
+	testImageFileName := "/home/enricodonelli/Pictures/connet_vision.jpg"
+	image := gui.NewQImage9(testImageFileName, "")
+
+	imageLabel.SetPixmap(gui.QPixmap_FromImage(image, core.Qt__AutoColor))
+	// loaded := imageLabel.SetPixmap( gui.Load. // .Pixmap().Load(testImageFileName, "", 0)
+	// log.Printf("image %s loaded? %v \n", testImageFileName, loaded)
 	//
 	rightWidget.Layout().AddWidget(imageLabel)
 
