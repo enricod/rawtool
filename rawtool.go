@@ -27,6 +27,12 @@ import (
 
 const thumbSize = 1280
 
+var imageLabel *widgets.QLabel
+
+var imageIndex int
+var images []myImage
+var imagesNumLabel *widgets.QLabel
+
 func rawExtensions() []string {
 	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
 }
@@ -53,13 +59,11 @@ func createDirIfNotExist(dir string) {
 	}
 }
 
-func createUi() {
+func createUI() {
 	// needs to be called once before you can start using the QWidgets
 	app := widgets.NewQApplication(len(os.Args), os.Args)
 
-	// create a window
-	// with a minimum size of 250*200
-	// and sets the title to "Hello Widgets Example"
+	// create main window
 	window := widgets.NewQMainWindow(nil, 0)
 	window.SetMinimumSize2(1024+400, 1024)
 	window.SetWindowTitle("RawTool")
@@ -68,13 +72,9 @@ func createUi() {
 	mainWidget.SetLayout(widgets.NewQHBoxLayout())
 	window.SetCentralWidget(mainWidget)
 
-	// create a regular widget
-	// give it a QVBoxLayout
-	// and make it the central widget of the window
 	leftWidget := widgets.NewQWidget(mainWidget, 0)
 	leftWidget.SetLayout(widgets.NewQVBoxLayout())
 	mainWidget.Layout().AddWidget(leftWidget)
-	//leftWidget.SetCentralWidget(leftWidget)
 
 	// create a line edit
 	// with a custom placeholder text
@@ -99,13 +99,13 @@ func createUi() {
 			selecteddir = selecteddir + "/"
 		}
 
-		go processImagesInDir(selecteddir)
+		//go processImagesInDir(selecteddir)
 
-		imagesInWotkDir, _ := readImagesInDir(selecteddir)
-		for _, i := range imagesInWotkDir {
-			log.Printf("img %s", i.Filename)
-		}
+		imagesInWorkDir, _ := readImagesInDir(selecteddir)
+		images = imagesInWorkDir
+		imageIndex = 0
 
+		showImage(images, imageIndex)
 		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
 	})
 	leftWidget.Layout().AddWidget(button)
@@ -114,7 +114,7 @@ func createUi() {
 	rightWidget.SetLayout(widgets.NewQVBoxLayout())
 	mainWidget.Layout().AddWidget(rightWidget)
 
-	imageLabel := widgets.NewQLabel(nil, 0)
+	imageLabel = widgets.NewQLabel(nil, 0)
 
 	// esistono sicuramente metodi migliori che non fare embde dell'immagine vuota, scriverla su disco e rileggerla!!!
 	// ma per ora lasciamo così
@@ -133,17 +133,53 @@ func createUi() {
 
 	rightWidget.Layout().AddWidget(imageLabel)
 
-	// make the window visible
-	window.Show()
+	// barra di navigazione tra le immagini
+	imagesNavBarWidget := widgets.NewQWidget(mainWidget, 0)
+	imagesNavBarWidget.SetLayout(widgets.NewQHBoxLayout())
 
-	// start the main Qt event loop
-	// and block until app.Exit() is called
-	// or the window is closed by the user
+	imagesNumLabel = widgets.NewQLabel(nil, 0)
+	imagesNumLabel.SetText("")
+	imagesNavBarWidget.Layout().AddWidget(imagesNumLabel)
+
+	prevImageBtn := widgets.NewQPushButton2("<", nil)
+	imagesNavBarWidget.Layout().AddWidget(prevImageBtn)
+	nextImageBtn := widgets.NewQPushButton2(">", nil)
+	nextImageBtn.ConnectClicked(func(bool) {
+		imageIndex = imageIndex + 1
+		if imageIndex >= len(images) {
+			imageIndex = 0
+		}
+		showImage(images, imageIndex)
+	})
+	imagesNavBarWidget.Layout().AddWidget(nextImageBtn)
+
+	rightWidget.Layout().AddWidget(imagesNavBarWidget)
+
+	window.Show()
 	app.Exec()
+}
+
+func showImage(images []myImage, index int) {
+	if index >= len(images) {
+		return
+	}
+	img, err := processMyimage(images[index])
+	if err != nil {
+		log.Printf("ERROR %s", err.Error())
+	} else {
+		log.Printf("%s", img.Thumb)
+
+		image := gui.NewQImage9(img.Thumb, "")
+		pixmap := gui.QPixmap_FromImage(image, core.Qt__AutoColor)
+		imageLabel.SetPixmap(pixmap)
+		imagesNumLabel.SetText(fmt.Sprintf("%d / %d images", imageIndex+1, len(images)))
+	}
 }
 
 func main() {
 	//defer profile.Start(profile.MemProfile).Stop()
+
+	imageIndex = 0
 
 	imagesdir := flag.String("d", ".", "imagesdir")
 	flag.Parse()
@@ -159,8 +195,7 @@ func main() {
 
 	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: outdir}
 
-	createUi()
-
+	createUI()
 }
 
 // called when user selects a directory
