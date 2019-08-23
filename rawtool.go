@@ -14,12 +14,16 @@ import (
 	"time"
 
 	"github.com/enricod/golibraw"
-	"github.com/gotk3/gotk3/gtk" //"github.com/gotk3/gotk3/gtk"
 	"github.com/nfnt/resize"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
+
+//	When we run `go generate` from the cli it will run the
+//	`go run` command outlined below
+//	**Important: sure to include the comment below for the generator to see**
+//go:generate go run generators/generator.go
 
 const thumbSize = 1280
 
@@ -39,7 +43,6 @@ type myImage struct {
 }
 
 var appSettings Settings
-var flowbox *gtk.FlowBox
 
 func createDirIfNotExist(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -58,7 +61,7 @@ func createUi() {
 	// with a minimum size of 250*200
 	// and sets the title to "Hello Widgets Example"
 	window := widgets.NewQMainWindow(nil, 0)
-	window.SetMinimumSize2(1024, 800)
+	window.SetMinimumSize2(1024+400, 1024)
 	window.SetWindowTitle("RawTool")
 
 	mainWidget := widgets.NewQWidget(nil, 0)
@@ -113,14 +116,21 @@ func createUi() {
 
 	imageLabel := widgets.NewQLabel(nil, 0)
 
-	//imageLabel.SetText("hhhhh")
-	testImageFileName := "/home/enricodonelli/Pictures/connet_vision.jpg"
+	// esistono sicuramente metodi migliori che non fare embde dell'immagine vuota, scriverla su disco e rileggerla!!!
+	// ma per ora lasciamo così
+	err := ioutil.WriteFile("/tmp/empty.png", empty1024, 0644)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	testImageFileName := "/tmp/empty.png"
 	image := gui.NewQImage9(testImageFileName, "")
 
-	imageLabel.SetPixmap(gui.QPixmap_FromImage(image, core.Qt__AutoColor))
-	// loaded := imageLabel.SetPixmap( gui.Load. // .Pixmap().Load(testImageFileName, "", 0)
-	// log.Printf("image %s loaded? %v \n", testImageFileName, loaded)
-	//
+	pixmap := gui.QPixmap_FromImage(image, core.Qt__AutoColor)
+
+	imageLabel.SetPixmap(pixmap)
+	imageLabel.Resize(pixmap.Size())
+
 	rightWidget.Layout().AddWidget(imageLabel)
 
 	// make the window visible
