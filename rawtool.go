@@ -143,6 +143,13 @@ func createUI() {
 
 	prevImageBtn := widgets.NewQPushButton2("<", nil)
 	imagesNavBarWidget.Layout().AddWidget(prevImageBtn)
+	prevImageBtn.ConnectClicked(func(bool) {
+		imageIndex = imageIndex - 1
+		if imageIndex < 0 {
+			imageIndex = len(images) - 1
+		}
+		showImage(images, imageIndex)
+	})
 	nextImageBtn := widgets.NewQPushButton2(">", nil)
 	nextImageBtn.ConnectClicked(func(bool) {
 		imageIndex = imageIndex + 1
