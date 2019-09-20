@@ -132,6 +132,8 @@ func createUI() {
 
 		appSettings.ImagesDir = selecteddir
 		appSettings.WorkDir = selecteddir + "/.rawtool"
+
+		createWorkDirIfNecessary(appSettings)
 		//go processImagesInDir(selecteddir)
 
 		imagesInWorkDir, _ := readImagesInDir(selecteddir)
@@ -257,13 +259,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(dir)
 
 	outdir := fmt.Sprint(dir, "/", ".rawtool")
-	createDirIfNotExist(outdir)
-
 	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: outdir}
-
+	createWorkDirIfNecessary(appSettings)
 	createUI()
 }
 
