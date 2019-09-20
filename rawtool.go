@@ -48,6 +48,37 @@ type myImage struct {
 	Path     string
 }
 
+// make a channel with a capacity of 100.
+type jobQueue struct {
+	numeroImmaginiElaborate int
+	jobChan                 chan myImage
+}
+
+func worker(queue *jobQueue) {
+
+	for job := range queue.jobChan {
+		log.Printf("elaboro %s", job.Filename)
+		processMyimage(job)
+
+		// time.Sleep(time.Duration(rand.Intn(10000)) * time.Millisecond)
+	}
+}
+
+// NewQueue coda di elaborazione
+func newQueue() *jobQueue {
+	q := jobQueue{
+		jobChan:                 make(chan myImage),
+		numeroImmaginiElaborate: 0,
+	}
+
+	return &q
+}
+
+func (q *jobQueue) EnqueueImage(img myImage) {
+	q.jobChan <- img
+	q.numeroImmaginiElaborate++
+}
+
 var appSettings Settings
 
 func createDirIfNotExist(dir string) {
@@ -104,10 +135,19 @@ func createUI() {
 		//go processImagesInDir(selecteddir)
 
 		imagesInWorkDir, _ := readImagesInDir(selecteddir)
-		images = imagesInWorkDir
 		imageIndex = 0
+		images = imagesInWorkDir
 
-		showImage(images, imageIndex)
+		showImage(imagesInWorkDir, imageIndex)
+
+		q := newQueue()
+
+		go worker(q)
+
+		for _, f := range imagesInWorkDir {
+			go q.EnqueueImage(f)
+		}
+
 		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
 	})
 	leftWidget.Layout().AddWidget(button)
@@ -188,7 +228,7 @@ func showImage(images []myImage, index int) {
 		imagesNumLabel.SetText(fmt.Sprintf("%d / %d images", imageIndex+1, len(images)))
 	}
 
-	go processNextImages(images, index, index+5)
+	//go processNextImages(images, index, index+5)
 
 }
 
@@ -227,6 +267,7 @@ func main() {
 	createUI()
 }
 
+/*
 // called when user selects a directory
 func dirSelected(dirname string) {
 	log.Printf("selected dir %s \n", dirname)
@@ -240,7 +281,7 @@ func dirSelected(dirname string) {
 	}
 	//go processImagesInDir(dirname)
 }
-
+*/
 // IsStringInSlice true if the slice contains the string a
 func IsStringInSlice(a string, list []string) bool {
 	for _, b := range list {
