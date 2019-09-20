@@ -90,6 +90,11 @@ func createDirIfNotExist(dir string) {
 	}
 }
 
+func createWorkDirIfNecessary(_appSettings Settings) {
+	outdir := fmt.Sprint(_appSettings.ImagesDir, "/", ".rawtool")
+	createDirIfNotExist(outdir)
+}
+
 func createUI() {
 	// needs to be called once before you can start using the QWidgets
 	app := widgets.NewQApplication(len(os.Args), os.Args)
