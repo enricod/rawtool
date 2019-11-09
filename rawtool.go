@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/enricod/golibraw"
-	"github.com/nfnt/resize"
+	"github.com/enricod/rawtool/rtimage"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -30,55 +29,16 @@ const thumbSize = 1280
 var imageLabel *widgets.QLabel
 
 var imageIndex int
-var images []myImage
+var images []rtimage.MyImage
 var imagesNumLabel *widgets.QLabel
 
 func rawExtensions() []string {
 	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
 }
 
-// Settings main application configurations
-type Settings struct {
-	ImagesDir string // directory with images
-	WorkDir   string // directory .rawtool
-}
 
-// contains image data
-type myImage struct {
-	Thumb    string
-	Filename string
-	Path     string
-}
 
-// make a channel with a capacity of 100.
-type jobQueue struct {
-	numeroImmaginiElaborate int
-	jobChan                 chan myImage
-}
-
-// worker receives from the queue the image to process
-func worker(queue *jobQueue) {
-	for job := range queue.jobChan {
-		processMyimage(job)
-		// time.Sleep(time.Duration(rand.Intn(10000)) * time.Millisecond)
-	}
-}
-
-// NewQueue queue where are added the images to be processed
-func newQueue() *jobQueue {
-	q := jobQueue{
-		jobChan:                 make(chan myImage),
-		numeroImmaginiElaborate: 0,
-	}
-	return &q
-}
-
-func (q *jobQueue) EnqueueImage(img myImage) {
-	q.jobChan <- img
-	q.numeroImmaginiElaborate++
-}
-
-var appSettings Settings
+var appSettings rtimage.Settings
 
 func createDirIfNotExist(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -89,7 +49,7 @@ func createDirIfNotExist(dir string) {
 	}
 }
 
-func createWorkDirIfNecessary(_appSettings Settings) {
+func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
 	outdir := fmt.Sprint(_appSettings.ImagesDir, "/", ".rawtool")
 	createDirIfNotExist(outdir)
 }
@@ -146,9 +106,9 @@ func createUI() {
 
 		showImage(imagesInWorkDir, imageIndex)
 
-		q := newQueue()
+		q := rtimage.NewQueue(appSettings)
 
-		go worker(q)
+		go rtimage.Worker(q)
 
 		for _, f := range imagesInWorkDir {
 			go q.EnqueueImage(f)
@@ -214,7 +174,7 @@ func createUI() {
 	app.Exec()
 }
 
-func showImage(images []myImage, index int) {
+func showImage(images []rtimage.MyImage, index int) {
 	if index >= len(images) {
 		return
 	}
@@ -222,7 +182,7 @@ func showImage(images []myImage, index int) {
 		return
 	}
 
-	img, err := processMyimage(images[index])
+	img, err := rtimage.ProcessMyimage(images[index], appSettings)
 	if err != nil {
 		log.Printf("ERROR %s", err.Error())
 	} else {
@@ -245,9 +205,9 @@ func intMin(a int, b int) int {
 		return b
 	}
 }
-func processNextImages(images []myImage, start int, howmany int) {
+func processNextImages(images []rtimage.MyImage, start int, howmany int) {
 	for i := start + 1; i <= intMin(len(images)-1, start+1+howmany); i++ {
-		processMyimage(images[i])
+		rtimage.ProcessMyimage(images[i], appSettings)
 	}
 }
 
@@ -265,53 +225,19 @@ func main() {
 	}
 
 	outdir := fmt.Sprint(dir, "/", ".rawtool")
-	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: outdir}
+	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: outdir}
 	createWorkDirIfNecessary(appSettings)
 	createUI()
 }
 
-/*
-// called when user selects a directory
-func dirSelected(dirname string) {
-	log.Printf("selected dir %s \n", dirname)
-	myImages, err := readImagesInDir(dirname)
-	if err != nil {
-		log.Printf("error %s", err.Error())
-	} else {
-		for _, myimg := range myImages {
-			processMyimage(myimg)
-		}
-	}
-	//go processImagesInDir(dirname)
-}
-*/
-// IsStringInSlice true if the slice contains the string a
-func IsStringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == strings.ToUpper(a) {
-			return true
-		}
-	}
-	return false
-}
-
-func FileExists(name string) bool {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
-}
-
-func readImagesInDir(dirname string) ([]myImage, error) {
+func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
 	files, _ := ioutil.ReadDir(dirname)
-	result := []myImage{}
+	result := []rtimage.MyImage{}
 	for _, f := range files {
 		ext := filepath.Ext(f.Name())
-		if strings.ToUpper(ext) == ".JPG" || IsStringInSlice(ext, rawExtensions()) {
+		if strings.ToUpper(ext) == ".JPG" || rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
 			log.Printf("trovata immagine %s", f.Name())
-			result = append(result, myImage{Path: dirname, Filename: f.Name()})
+			result = append(result, rtimage.MyImage{Path: dirname, Filename: f.Name()})
 		}
 	}
 	return result, nil
@@ -321,55 +247,10 @@ func isImage(filename string) bool {
 	ext := filepath.Ext(filename)
 	if strings.ToUpper(ext) == ".JPG" {
 		return true
-	} else if IsStringInSlice(ext, rawExtensions()) {
+	} else if rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
 		return true
 	}
 	return false
-}
-
-func processMyimage(myimg myImage) (myImage, error) {
-	outpath := fmt.Sprintf("%s/.rawtool", myimg.Path)
-	outfilename := fmt.Sprint(outpath, "/", myimg.Filename, ".thumb.jpg")
-	log.Printf("generazione thumb %s", outfilename)
-	ext := filepath.Ext(myimg.Filename)
-	if FileExists(outfilename) {
-		log.Printf("thumb already created %s", outfilename)
-	} else {
-		if strings.ToUpper(ext) == ".JPG" {
-			// I just create the thumbnail
-			infile := myimg.Path + "/" + myimg.Filename
-			imgfile, err := os.Open(infile)
-
-			if err != nil {
-				fmt.Println(infile + " file not found!")
-			} else {
-				defer imgfile.Close()
-				img, _, err := image.Decode(imgfile)
-				if err != nil {
-					log.Printf("errore %v \n", err)
-				} else {
-					writeThumb(outpath, myimg.Filename, &img)
-				}
-			}
-		} else if IsStringInSlice(ext, rawExtensions()) {
-
-			fileAbsPath := fmt.Sprintf("%s/%s", myimg.Path, myimg.Filename)
-			log.Printf("loading  %s", fileAbsPath)
-			fileInfo, err3 := os.Stat(fileAbsPath)
-			if err3 != nil {
-				log.Printf("error decoding %s  %s\n", fileAbsPath, err3.Error())
-			}
-			img, err2 := golibraw.Raw2Image(appSettings.ImagesDir, fileInfo)
-			if err2 == nil {
-				//result = (result, myImage{Image: img, Filename: f})
-				writeThumb(outpath, myimg.Filename, &img)
-			} else {
-				log.Printf("error decoding %s %s\n", myimg.Filename, err2.Error())
-			}
-		}
-	}
-	myimg.Thumb = outfilename
-	return myimg, nil
 }
 
 /*
@@ -423,32 +304,6 @@ func processImagesInDir(dirname string) ([]myImage, error) {
 	return result, nil
 }
 */
-func writeThumb(path string, filename string, img *image.Image) error {
-	t0 := time.Now()
-	var opt jpeg.Options
-
-	opt.Quality = 70
-	// ok, write out the data into the new JPEG file
-
-	rand.Seed(time.Now().UTC().UnixNano())
-	outfilename := fmt.Sprint(appSettings.WorkDir, "/", filename, ".thumb.jpg")
-
-	out, err := os.Create(outfilename)
-	if err != nil {
-		log.Printf("ERROR %s", err.Error())
-		return err
-	}
-
-	newImage := resize.Resize(1280, 0, *img, resize.Lanczos3)
-
-	err = jpeg.Encode(out, newImage, &opt)
-	if err != nil {
-		log.Printf("ERROR %s", err.Error())
-		return err
-	}
-	log.Printf("created and saved thumbnail %s , required %v", outfilename, time.Since(t0))
-	return nil
-}
 
 /*
 func writeAsThumb(filename os.FileInfo, img *image.Image) error {
