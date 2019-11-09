@@ -37,11 +37,13 @@ func rawExtensions() []string {
 	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
 }
 
+// Settings main application configurations
 type Settings struct {
 	ImagesDir string // directory with images
 	WorkDir   string // directory .rawtool
 }
 
+// contains image data
 type myImage struct {
 	Thumb    string
 	Filename string
@@ -54,23 +56,20 @@ type jobQueue struct {
 	jobChan                 chan myImage
 }
 
+// worker receives from the queue the image to process
 func worker(queue *jobQueue) {
-
 	for job := range queue.jobChan {
-		log.Printf("elaboro %s", job.Filename)
 		processMyimage(job)
-
 		// time.Sleep(time.Duration(rand.Intn(10000)) * time.Millisecond)
 	}
 }
 
-// NewQueue coda di elaborazione
+// NewQueue queue where are added the images to be processed
 func newQueue() *jobQueue {
 	q := jobQueue{
 		jobChan:                 make(chan myImage),
 		numeroImmaginiElaborate: 0,
 	}
-
 	return &q
 }
 
