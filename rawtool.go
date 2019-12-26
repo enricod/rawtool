@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -14,9 +13,6 @@ import (
 	"time"
 
 	"github.com/enricod/rawtool/rtimage"
-	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/widgets"
 )
 
 //	When we run `go generate` from the cli it will run the
@@ -26,11 +22,12 @@ import (
 
 const thumbSize = 1280
 
-var imageLabel *widgets.QLabel
+//var imageLabel *widgets.QLabel
 
 var imageIndex int
 var images []rtimage.MyImage
-var imagesNumLabel *widgets.QLabel
+
+// var imagesNumLabel *widgets.QLabel
 
 func rawExtensions() []string {
 	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
@@ -52,74 +49,13 @@ func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
 	createDirIfNotExist(outdir)
 }
 
-func processDir(appSettings rtimage.Settings) {
-	imagesInWorkDir, _ := readImagesInDir(appSettings.ImagesDir)
+func processDir(dirname string, appSettings rtimage.Settings) {
+	imagesInWorkDir, _ := readImagesInDir(dirname)
 
 	images = imagesInWorkDir
 
-	q := rtimage.NewQueue(appSettings)
-
-	go rtimage.Worker(q)
-
-	for _, f := range imagesInWorkDir {
-		go q.EnqueueImage(f)
-	}
-
-	time.Sleep(5 * time.Minute)
-}
-
-func createUI() {
-	// needs to be called once before you can start using the QWidgets
-	app := widgets.NewQApplication(len(os.Args), os.Args)
-
-	// create main window
-	window := widgets.NewQMainWindow(nil, 0)
-	window.SetMinimumSize2(1024+400, 1024)
-	window.SetWindowTitle("RawTool")
-
-	mainWidget := widgets.NewQWidget(nil, 0)
-	mainWidget.SetLayout(widgets.NewQHBoxLayout())
-	window.SetCentralWidget(mainWidget)
-
-	leftWidget := widgets.NewQWidget(mainWidget, 0)
-	leftWidget.SetLayout(widgets.NewQVBoxLayout())
-	mainWidget.Layout().AddWidget(leftWidget)
-
-	// create a line edit
-	// with a custom placeholder text
-	// and add it to the central widgets layout
-	input := widgets.NewQLineEdit(nil)
-	input.SetPlaceholderText("Write something ...")
-	leftWidget.Layout().AddWidget(input)
-
-	// create a button
-	// connect the clicked signal
-	// and add it to the central widgets layout
-	button := widgets.NewQPushButton2("Select dir", nil)
-	button.ConnectClicked(func(bool) {
-		//dialog := widgets.NewQFileDialog(window, core.Qt__Dialog)
-		// dialog.OpenDefault()
-		// dialog.ConnectFileSelected(dirSelected)
-
-		var selecteddir string
-		selecteddir = widgets.QFileDialog_GetExistingDirectory(window, "select dir", appSettings.ImagesDir, 1)
-
-		if strings.HasSuffix(selecteddir, "/") {
-			selecteddir = selecteddir[:len(selecteddir)-1]
-		}
-
-		appSettings.ImagesDir = selecteddir
-		appSettings.WorkDir = selecteddir + "/.rawtool"
-
-		createWorkDirIfNecessary(appSettings)
-		//go processImagesInDir(selecteddir)
-
-		imagesInWorkDir, _ := readImagesInDir(selecteddir)
-		imageIndex = 0
-		images = imagesInWorkDir
-
-		showImage(imagesInWorkDir, imageIndex)
-
+	useQueues := false
+	if useQueues {
 		q := rtimage.NewQueue(appSettings)
 
 		go rtimage.Worker(q)
@@ -128,88 +64,14 @@ func createUI() {
 			go q.EnqueueImage(f)
 		}
 
-		//widgets.QMessageBox_Information(nil, "OK", input.Text(), widgets.QMessageBox__Ok, widgets.QMessageBox__Ok)
-	})
-	leftWidget.Layout().AddWidget(button)
-
-	rightWidget := widgets.NewQWidget(mainWidget, 0)
-	rightWidget.SetLayout(widgets.NewQVBoxLayout())
-	mainWidget.Layout().AddWidget(rightWidget)
-
-	imageLabel = widgets.NewQLabel(nil, 0)
-
-	// esistono sicuramente metodi migliori che non fare embde dell'immagine vuota, scriverla su disco e rileggerla!!!
-	// ma per ora lasciamo così
-	err := ioutil.WriteFile("/tmp/empty.png", empty1024, 0644)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	testImageFileName := "/tmp/empty.png"
-	image := gui.NewQImage9(testImageFileName, "")
-
-	pixmap := gui.QPixmap_FromImage(image, core.Qt__AutoColor)
-
-	imageLabel.SetPixmap(pixmap)
-	imageLabel.Resize(pixmap.Size())
-
-	rightWidget.Layout().AddWidget(imageLabel)
-
-	// barra di navigazione tra le immagini
-	imagesNavBarWidget := widgets.NewQWidget(mainWidget, 0)
-	imagesNavBarWidget.SetLayout(widgets.NewQHBoxLayout())
-
-	imagesNumLabel = widgets.NewQLabel(nil, 0)
-	imagesNumLabel.SetText("")
-	imagesNavBarWidget.Layout().AddWidget(imagesNumLabel)
-
-	prevImageBtn := widgets.NewQPushButton2("<", nil)
-	imagesNavBarWidget.Layout().AddWidget(prevImageBtn)
-	prevImageBtn.ConnectClicked(func(bool) {
-		imageIndex = imageIndex - 1
-		if imageIndex < 0 {
-			imageIndex = len(images) - 1
-		}
-		showImage(images, imageIndex)
-	})
-	nextImageBtn := widgets.NewQPushButton2(">", nil)
-	nextImageBtn.ConnectClicked(func(bool) {
-		imageIndex = imageIndex + 1
-		if imageIndex >= len(images) {
-			imageIndex = 0
-		}
-		showImage(images, imageIndex)
-	})
-	imagesNavBarWidget.Layout().AddWidget(nextImageBtn)
-
-	rightWidget.Layout().AddWidget(imagesNavBarWidget)
-
-	window.Show()
-	app.Exec()
-}
-
-func showImage(images []rtimage.MyImage, index int) {
-	if index >= len(images) {
-		return
-	}
-	if index < 0 {
-		return
-	}
-
-	img, err := rtimage.ProcessMyimage(images[index], appSettings)
-	if err != nil {
-		log.Printf("ERROR %s", err.Error())
+		time.Sleep(5 * time.Minute)
 	} else {
-		log.Printf("%s", img.Thumb)
+		log.Printf("trovate %d immagini ", len(images))
+		for _, img := range images {
+			rtimage.ProcessMyimage(img, appSettings)
+		}
 
-		image := gui.NewQImage9(img.Thumb, "")
-		pixmap := gui.QPixmap_FromImage(image, core.Qt__AutoColor)
-		imageLabel.SetPixmap(pixmap)
-		imagesNumLabel.SetText(fmt.Sprintf("%d / %d images", imageIndex+1, len(images)))
 	}
-
-	//go processNextImages(images, index, index+5)
-
 }
 
 func intMin(a int, b int) int {
@@ -238,25 +100,50 @@ func main() {
 		log.Fatal(err)
 	}
 
-	outdir := fmt.Sprint(dir, "/", ".rawtool")
+	outdir := "/data1/thumbs" // fmt.Sprint(dir, "/", ".rawtool")
 	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: outdir}
-	createWorkDirIfNecessary(appSettings)
+	// createWorkDirIfNecessary(appSettings)
 
-	processDir(appSettings)
+	processDir(dir, appSettings)
 	// FIXME per ora facciamo solo da CLI
 	// createUI()
 }
 
 func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
-	files, _ := ioutil.ReadDir(dirname)
+
 	result := []rtimage.MyImage{}
-	for _, f := range files {
-		ext := filepath.Ext(f.Name())
-		if strings.ToUpper(ext) == ".JPG" || rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
-			log.Printf("trovata immagine %s", f.Name())
-			result = append(result, rtimage.MyImage{Path: dirname, Filename: f.Name()})
+	skipDirs := []string{".", "..", ".dtrash", ".Trash-1000", ".rawtool"}
+
+	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			return err
 		}
+
+		if info.IsDir() && rtimage.IsStringInSlice(info.Name(), skipDirs) {
+			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
+			return filepath.SkipDir
+		}
+		if info.IsDir() {
+			log.Printf("walking into dir %s %s", path, info.Name())
+		}
+		//files, _ := ioutil.ReadDir(path)
+
+		//for _, f := range files {
+		ext := filepath.Ext(path)
+		if strings.ToUpper(ext) == ".JPG" || rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
+			//log.Printf("trovata immagine %s | %s", path, info.Name())
+			result = append(result, rtimage.MyImage{Path: path, Filename: info.Name()})
+		}
+		//}
+
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("error walking the path %q: %v\n", dirname, err)
+		return result, nil
 	}
+
 	return result, nil
 }
 
