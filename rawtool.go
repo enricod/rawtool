@@ -15,11 +15,6 @@ import (
 	"github.com/enricod/rawtool/rtimage"
 )
 
-//	When we run `go generate` from the cli it will run the
-//	`go run` command outlined below
-//	**Important: sure to include the comment below for the generator to see**
-//go:generate go run generators/generator.go
-
 const thumbSize = 1280
 
 //var imageLabel *widgets.QLabel
