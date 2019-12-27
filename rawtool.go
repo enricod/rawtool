@@ -51,9 +51,7 @@ func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
 
 func processDir(dirname string, appSettings rtimage.Settings) {
 	imagesInWorkDir, _ := readImagesInDir(dirname)
-
 	images = imagesInWorkDir
-
 	useQueues := false
 	if useQueues {
 		q := rtimage.NewQueue(appSettings)
@@ -63,14 +61,14 @@ func processDir(dirname string, appSettings rtimage.Settings) {
 		for _, f := range imagesInWorkDir {
 			go q.EnqueueImage(f)
 		}
-
 		time.Sleep(5 * time.Minute)
 	} else {
 		log.Printf("trovate %d immagini ", len(images))
-		for _, img := range images {
+		for index, img := range images {
+			log.Printf("%d/%d elaborazione di %s", index, len(images), img.Filename)
+
 			rtimage.ProcessMyimage(img, appSettings)
 		}
-
 	}
 }
 
