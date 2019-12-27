@@ -13,6 +13,7 @@ import (
 
 	"github.com/enricod/golibraw"
 	"github.com/nfnt/resize"
+	"github.com/xiam/exif"
 )
 
 type Settings struct {
@@ -46,6 +47,12 @@ func Worker(queue *JobQueue) {
 func calcolaOutputDir(imgMeta golibraw.ImgMetadata) string {
 	year := string(imgMeta.ScattoDataOra[0:4])
 	day := string(imgMeta.ScattoDataOra[0:10])
+	return year + "/" + day
+}
+
+func calcolaOutputDirFromExifTags(exifData *exif.Data) string {
+	year := string(exifData.Tags["Date and Time"][0:4])
+	day := strings.ReplaceAll(string(exifData.Tags["Date and Time"][0:10]), ":", "-")
 	return year + "/" + day
 }
 
@@ -84,42 +91,49 @@ func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
 
 	if strings.ToUpper(ext) == ".JPG" {
 		// I just create the thumbnail
-		/*
-			imgfile, err := os.Open(myimg.Path)
 
+		exifData, err := exif.Read(myimg.Path)
+		if err != nil {
+			fmt.Println(myimg.Path + " error reading exif data")
+			return MyImage{}, err
+		}
+		//log.Printf("data scatto = %s", exifData.Tags["Date and Time"])
+		//for key, val := range data.Tags {
+		//	fmt.Printf("%s = %s\n", key, val)
+		//}
+		outDir := fmt.Sprintf("%s/%s", settings.WorkDir, calcolaOutputDirFromExifTags(exifData))
+
+		imgfile, err := os.Open(myimg.Path)
+
+		if err != nil {
+			fmt.Println(myimg.Path + " file not found!")
+		} else {
+			defer imgfile.Close()
+			img, _, err := image.Decode(imgfile)
 			if err != nil {
-				fmt.Println(myimg.Path + " file not found!")
+				log.Printf("errore %v \n", err)
 			} else {
-				defer imgfile.Close()
-				img, _, err := image.Decode(imgfile)
-				if err != nil {
-					log.Printf("errore %v \n", err)
-				} else {
-					writeThumb(outpath, myimg.Filename, &img, settings)
-				}
+				log.Printf("loading  %s, saving in %s", myimg.Path, outDir)
+				writeThumb(outDir, myimg.Filename, &img, settings)
 			}
-		*/
+		}
+
 	} else if IsStringInSlice(ext, RawExtensions()) {
 
-		log.Printf("loading  %s", myimg.Path)
 		img, imgMetadata, err2 := golibraw.Raw2Image(myimg.Path)
 		if err2 == nil {
-			log.Printf("img metadata %v", imgMetadata)
+			//log.Printf("img metadata %v", imgMetadata)
 			outDir := fmt.Sprintf("%s/%s", settings.WorkDir, calcolaOutputDir(imgMetadata))
-
 			outfilename := fmt.Sprintf("%s/%s.thumb.jpg", outDir, myimg.Filename)
 			if FileExists(outfilename) {
 				return myimg, nil
 			}
-			// outfilename := fmt.Sprint(outpath, "/", myimg.Filename, ".thumb.jpg")
+			log.Printf("loading  %s, saving in %s", myimg.Path, outDir)
 			writeThumb(outDir, myimg.Filename, &img, settings)
 		} else {
-
 			log.Printf("error decoding %s %s\n", myimg.Filename, err2.Error())
 		}
 	}
-
-	//myimg.Thumb = outfilename
 	return myimg, nil
 }
 

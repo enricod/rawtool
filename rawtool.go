@@ -17,12 +17,7 @@ import (
 
 const thumbSize = 1280
 
-//var imageLabel *widgets.QLabel
-
-var imageIndex int
 var images []rtimage.MyImage
-
-// var imagesNumLabel *widgets.QLabel
 
 func rawExtensions() []string {
 	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
@@ -58,10 +53,9 @@ func processDir(dirname string, appSettings rtimage.Settings) {
 		}
 		time.Sleep(5 * time.Minute)
 	} else {
-		log.Printf("trovate %d immagini ", len(images))
+		log.Printf("found %d images ", len(images))
 		for index, img := range images {
-			log.Printf("%d/%d elaborazione di %s", index, len(images), img.Filename)
-
+			log.Printf("step %d/%d, processing image %s", index+1, len(images), img.Filename)
 			rtimage.ProcessMyimage(img, appSettings)
 		}
 	}
@@ -74,32 +68,11 @@ func intMin(a int, b int) int {
 		return b
 	}
 }
+
 func processNextImages(images []rtimage.MyImage, start int, howmany int) {
 	for i := start + 1; i <= intMin(len(images)-1, start+1+howmany); i++ {
 		rtimage.ProcessMyimage(images[i], appSettings)
 	}
-}
-
-func main() {
-	//defer profile.Start(profile.MemProfile).Stop()
-
-	imageIndex = 0
-
-	imagesdir := flag.String("d", ".", "imagesdir")
-	flag.Parse()
-
-	dir, err := filepath.Abs(filepath.Dir(*imagesdir))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outdir := "/data1/thumbs" // fmt.Sprint(dir, "/", ".rawtool")
-	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: outdir}
-	// createWorkDirIfNecessary(appSettings)
-
-	processDir(dir, appSettings)
-	// FIXME per ora facciamo solo da CLI
-	// createUI()
 }
 
 func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
@@ -117,18 +90,12 @@ func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
 			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
-		if info.IsDir() {
-			log.Printf("walking into dir %s %s", path, info.Name())
-		}
-		//files, _ := ioutil.ReadDir(path)
 
-		//for _, f := range files {
 		ext := filepath.Ext(path)
 		if strings.ToUpper(ext) == ".JPG" || rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
-			//log.Printf("trovata immagine %s | %s", path, info.Name())
+
 			result = append(result, rtimage.MyImage{Path: path, Filename: info.Name()})
 		}
-		//}
 
 		return nil
 	})
@@ -170,4 +137,22 @@ func writeAsJpeg(filename os.FileInfo, img image.Image) error {
 		os.Exit(1)
 	}
 	return nil
+}
+
+func main() {
+	//defer profile.Start(profile.MemProfile).Stop()
+
+	imagesdir := flag.String("d", ".", "imagesdir")
+	flag.Parse()
+
+	outdir := flag.String("o", "/data1/thumbs", "outputdir")
+
+	dir, err := filepath.Abs(filepath.Dir(*imagesdir))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
+
+	processDir(dir, appSettings)
 }
