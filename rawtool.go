@@ -154,5 +154,7 @@ func main() {
 
 	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
 
+	rtimage.OpenDB(appSettings)
 	processDir(dir, appSettings)
+	rtimage.CloseDB()
 }
