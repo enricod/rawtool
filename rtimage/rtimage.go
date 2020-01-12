@@ -2,7 +2,6 @@ package rtimage
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -21,6 +20,16 @@ import (
 	// "github.com/HouzuoGuo/tiedot/db"
 	//	"github.com/HouzuoGuo/tiedot/dberr"
 )
+
+type SearchDoc struct {
+	id       string
+	sha256   string
+	filename string
+}
+type SearchEngine interface {
+	getByID(id string) SearchDoc
+	save(doc SearchDoc)
+}
 
 // Settings contiene impostazioni del programma
 type Settings struct {
@@ -120,6 +129,7 @@ func RawExtensions() []string {
 }
 
 func calcolaSha256(file string) string {
+	//t0 := time.Now()
 	f, err := os.Open(file)
 	if err != nil {
 		log.Fatal(err)
@@ -130,17 +140,12 @@ func calcolaSha256(file string) string {
 	if _, err := io.Copy(h, f); err != nil {
 		log.Fatal(err)
 	}
+	// log.Printf("sha256sum %s required %d", file, time.Since(t0))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// ProcessMyimage elabora immagine
-func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
-
-	picturesColl := database.Use("Pictures")
-
-	sha256 := calcolaSha256(myimg.Path)
-
-	// cerchiamo se file è già stato elaborato
+/*
+func queryImageDocument(picturesColl *db.Col, sha256 string) map[string]interface{} {
 	var query interface{}
 	json.Unmarshal([]byte(`[{"eq": "`+sha256+`", "in": ["sha256"]}]`), &query)
 	queryResult := make(map[int]struct{}) // query result (document IDs) goes into map keys
@@ -149,34 +154,51 @@ func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
 		log.Printf("errore nella query %s", err.Error())
 	}
 
-	var found = false
-	// Query result are document IDs
-	for id := range queryResult {
-		// To get query result document, simply read it
+	if len(queryResult) > 0 {
+		id := queryResult[0]
 		readBack, err := picturesColl.Read(id)
 		if err != nil {
 			log.Printf("errore nella query %s\n", err.Error())
-		} else {
-			found = true
-			log.Printf("Query returned document %v\n", readBack)
+			return nil
 		}
-	}
+		log.Printf("Query returned document %v\n", readBack)
+		return readBack
 
-	if found {
+	}
+	return nil
+}
+*/
+// ProcessMyimage elabora immagine
+func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
+
+	//picturesColl := database.Use("Pictures")
+
+	searchClient := SolrClient{host: "http://localhost:8983/solr"}
+
+	sha256 := calcolaSha256(myimg.Path)
+	searchDoc, err := searchClient.getByID(sha256)
+	// indexDoc := queryImageDocument(picturesColl, sha256)
+	// cerchiamo se file è già stato elaborato
+
+	if err == nil {
 		log.Printf("documento già elaborato: %s", myimg.Path)
 		return MyImage{}, nil
 	}
 
-	docID, err := picturesColl.Insert(map[string]interface{}{
-		"sha256":           sha256,
-		"originalFilename": myimg.Path,
-		"stars":            0,
-		"tags":             ""})
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("documento inserito nel database: %v", docID)
+	searchDoc = SearchDoc{sha256: sha256, id: sha256, filename: myimg.Path}
+	searchClient.save(searchDoc)
 
+	/*
+		docID, err := picturesColl.Insert(map[string]interface{}{
+			"sha256":           sha256,
+			"originalFilename": myimg.Path,
+			"stars":            0,
+			"tags":             ""})
+		if err != nil {
+			panic(err)
+		}
+		log.Printf("documento inserito nel database: %v", docID)
+	*/
 	ext := filepath.Ext(myimg.Filename)
 
 	if strings.ToUpper(ext) == ".JPG" {

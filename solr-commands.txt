@@ -1,0 +1,48 @@
+
+
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/photos/update/json/docs' --data-binary '
+{
+  "id": "1",
+  "sha256_s": "1",
+  "fileName_s":"1.jpg"
+  
+}'
+
+
+
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/photos/update' --data-binary '
+{
+  "add": {
+    "doc": {
+      "id": "1",
+      "sha256_s": "1"
+    },
+    
+  },
+  "add" : {
+    "doc": {
+      "id": "2",
+      "sha256_s": "2"
+    }
+  },
+ 
+  "commit": {},
+  "optimize": { "waitSearcher":false },
+
+  "delete": { "id":"ID" },  
+  "delete": { "query":"QUERY" } 
+}'
+
+
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/photos/update' --data-binary '
+[
+   {
+      "id": "1",
+      "sha256_s": "1s"
+    },
+    {
+      "id": "2",
+      "sha256_s": "2s"
+    }
+]
+'
