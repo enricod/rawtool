@@ -19,10 +19,6 @@ const thumbSize = 1280
 
 var images []rtimage.MyImage
 
-func rawExtensions() []string {
-	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
-}
-
 var appSettings rtimage.Settings
 
 func createDirIfNotExist(dir string) {
@@ -64,9 +60,8 @@ func processDir(dirname string, appSettings rtimage.Settings) {
 func intMin(a int, b int) int {
 	if a < b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 func processNextImages(images []rtimage.MyImage, start int, howmany int) {
@@ -141,7 +136,6 @@ func writeAsJpeg(filename os.FileInfo, img image.Image) error {
 
 func main() {
 	//defer profile.Start(profile.MemProfile).Stop()
-
 	imagesdir := flag.String("d", ".", "imagesdir")
 	flag.Parse()
 
