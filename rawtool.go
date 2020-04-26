@@ -39,7 +39,7 @@ func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
 	createDirIfNotExist(outdir)
 }
 
-func processDir(dirname string, appSettings rtimage.Settings) {
+func ProcessDir(dirname string, appSettings rtimage.Settings) {
 	imagesInWorkDir, _ := readImagesInDir(dirname)
 	images = imagesInWorkDir
 	useQueues := false
@@ -155,6 +155,6 @@ func main() {
 	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
 
 	rtimage.OpenDB(appSettings)
-	processDir(dir, appSettings)
+	ProcessDir(dir, appSettings)
 	rtimage.CloseDB()
 }
