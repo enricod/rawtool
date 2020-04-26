@@ -1,8 +1,22 @@
 # rawtool
 
+```bash
+./rawtool -d <DirInput> -o <DirOutput = /data1/thumbs>
+```
 
-database utilizzato per indicizzare i documenti
+SORL database utilizzato per indicizzare i documenti
+
+per ora è in
+
+```bash
+cd ~/opt/solr
+bin/solr start
+```
+
+per il contenuto di solr
 
 ```
-tiedot -mode=httpd -dir=/data1/Pictures/_db -port 8383 -verbose
+http://localhost:8983/solr/#/
 ```
+
+

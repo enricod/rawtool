@@ -21,6 +21,11 @@ import (
 	//	"github.com/HouzuoGuo/tiedot/dberr"
 )
 
+// RawExtensions elenco delle estensioni dei file raw
+func RawExtensions() []string {
+	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
+}
+
 type SearchDoc struct {
 	id       string
 	sha256   string
@@ -121,11 +126,6 @@ func FileExists(name string) bool {
 		}
 	}
 	return true
-}
-
-// RawExtensions elenco delle estensioni supportate
-func RawExtensions() []string {
-	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
 }
 
 func calcolaSha256(file string) string {
