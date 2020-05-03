@@ -172,21 +172,23 @@ func queryImageDocument(picturesColl *db.Col, sha256 string) map[string]interfac
 func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
 
 	//picturesColl := database.Use("Pictures")
-
-	searchClient := SolrClient{host: "http://localhost:8983/solr"}
+	useSearchEngine := false
 
 	sha256 := calcolaSha256(myimg.Path)
-	searchDoc, err := searchClient.getByID(sha256)
-	// indexDoc := queryImageDocument(picturesColl, sha256)
-	// cerchiamo se file è già stato elaborato
+	if useSearchEngine {
+		searchClient := SolrClient{host: "http://localhost:8983/solr"}
+		searchDoc, err := searchClient.getByID(sha256)
+		// indexDoc := queryImageDocument(picturesColl, sha256)
+		// cerchiamo se file è già stato elaborato
 
-	if err == nil {
-		log.Printf("documento già elaborato: %s", myimg.Path)
-		return MyImage{}, nil
+		if err == nil {
+			log.Printf("documento già elaborato: %s", myimg.Path)
+			return MyImage{}, nil
+		}
+
+		searchDoc = SearchDoc{sha256: sha256, id: sha256, filename: myimg.Path}
+		searchClient.save(searchDoc)
 	}
-
-	searchDoc = SearchDoc{sha256: sha256, id: sha256, filename: myimg.Path}
-	searchClient.save(searchDoc)
 
 	/*
 		docID, err := picturesColl.Insert(map[string]interface{}{

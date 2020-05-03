@@ -35,6 +35,7 @@ func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
 	createDirIfNotExist(outdir)
 }
 
+// ProcessDir elabora immagini in directory
 func ProcessDir(dirname string, appSettings rtimage.Settings) {
 	imagesInWorkDir, _ := readImagesInDir(dirname)
 	images = imagesInWorkDir
@@ -139,7 +140,8 @@ func main() {
 	imagesdir := flag.String("d", ".", "imagesdir")
 	flag.Parse()
 
-	outdir := flag.String("o", "/data1/thumbs", "outputdir")
+	//outdir := flag.String("o", "/data1/thumbs", "outputdir")
+	outdir := flag.String("o", "/home/enrico/tmp/thumbs", "outputdir")
 
 	dir, err := filepath.Abs(filepath.Dir(*imagesdir))
 	if err != nil {
@@ -148,7 +150,7 @@ func main() {
 
 	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
 
-	rtimage.OpenDB(appSettings)
+	//rtimage.OpenDB(appSettings)
 	ProcessDir(dir, appSettings)
-	rtimage.CloseDB()
+	//rtimage.CloseDB()
 }
