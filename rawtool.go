@@ -11,15 +11,20 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/enricod/rawtool/rtimage"
 )
 
 const thumbSize = 1280
 
-var images []rtimage.MyImage
+var images []MyImage
 
-var appSettings rtimage.Settings
+var appSettings Settings
+
+// Settings contiene impostazioni del programma
+type Settings struct {
+	ImagesDir string // directory with images
+	WorkDir   string // directory where are saved the thumbnails
+	Recursive bool
+}
 
 func createDirIfNotExist(dir string) {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -30,32 +35,28 @@ func createDirIfNotExist(dir string) {
 	}
 }
 
-func createWorkDirIfNecessary(_appSettings rtimage.Settings) {
+func createWorkDirIfNecessary(_appSettings Settings) {
 	outdir := fmt.Sprint(_appSettings.ImagesDir, "/", ".rawtool")
 	createDirIfNotExist(outdir)
 }
 
 // ProcessDir elabora immagini in directory
-func ProcessDir(dirname string, appSettings rtimage.Settings) {
+func ProcessDir(dirname string, appSettings Settings) {
 	imagesInWorkDir, _ := readImagesInDir(dirname)
 	images = imagesInWorkDir
-	useQueues := false
-	if useQueues {
-		q := rtimage.NewQueue(appSettings)
 
-		go rtimage.Worker(q)
+	log.Printf("found %d images ", len(images))
+	for index, img := range images {
+		log.Printf("step %d/%d, processing image %s", index+1, len(images), img.Filename)
 
-		for _, f := range imagesInWorkDir {
-			go q.EnqueueImage(f)
-		}
-		time.Sleep(5 * time.Minute)
-	} else {
-		log.Printf("found %d images ", len(images))
-		for index, img := range images {
-			log.Printf("step %d/%d, processing image %s", index+1, len(images), img.Filename)
-			rtimage.ProcessMyimage(img, appSettings)
-		}
+		workReq := WorkRequest{SourceFileName: img.Filename, Delay: 10}
+
+		// Push the work onto the queue.
+		WorkQueueWorkRequestChan <- workReq
+
+		//rtimage.ProcessMyimage(img, appSettings)
 	}
+
 }
 
 func intMin(a int, b int) int {
@@ -65,15 +66,15 @@ func intMin(a int, b int) int {
 	return b
 }
 
-func processNextImages(images []rtimage.MyImage, start int, howmany int) {
+func processNextImages(images []MyImage, start int, howmany int) {
 	for i := start + 1; i <= intMin(len(images)-1, start+1+howmany); i++ {
-		rtimage.ProcessMyimage(images[i], appSettings)
+		ProcessMyimage(images[i], appSettings)
 	}
 }
 
-func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
+func readImagesInDir(dirname string) ([]MyImage, error) {
 
-	result := []rtimage.MyImage{}
+	result := []MyImage{}
 	skipDirs := []string{".", "..", ".dtrash", ".Trash-1000", ".rawtool"}
 
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
@@ -82,15 +83,15 @@ func readImagesInDir(dirname string) ([]rtimage.MyImage, error) {
 			return err
 		}
 
-		if info.IsDir() && rtimage.IsStringInSlice(info.Name(), skipDirs) {
+		if info.IsDir() && IsStringInSlice(info.Name(), skipDirs) {
 			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
 
 		ext := filepath.Ext(path)
-		if strings.ToUpper(ext) == ".JPG" || rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
+		if strings.ToUpper(ext) == ".JPG" || IsStringInSlice(ext, RawExtensions()) {
 
-			result = append(result, rtimage.MyImage{Path: path, Filename: info.Name()})
+			result = append(result, MyImage{Path: path, Filename: info.Name()})
 		}
 
 		return nil
@@ -107,7 +108,7 @@ func isImage(filename string) bool {
 	ext := filepath.Ext(filename)
 	if strings.ToUpper(ext) == ".JPG" {
 		return true
-	} else if rtimage.IsStringInSlice(ext, rtimage.RawExtensions()) {
+	} else if IsStringInSlice(ext, RawExtensions()) {
 		return true
 	}
 	return false
@@ -148,7 +149,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	appSettings = rtimage.Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
+	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
+
+	StartDispatcher(4)
 
 	//rtimage.OpenDB(appSettings)
 	ProcessDir(dir, appSettings)
