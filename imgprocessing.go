@@ -25,9 +25,9 @@ func RawExtensions() []string {
 
 // MyImage struct used to save informations about the image which is processed
 type MyImage struct {
-	Thumb    string // thumbnail path
-	Filename string // original filename
-	Path     string // percorso completo immagine originale
+	ThumbPath string // thumbnail path
+	Filename  string // original filename
+	Path      string // percorso completo immagine originale
 }
 
 func calcolaOutputDir(imgMeta golibraw.ImgMetadata) string {
@@ -74,7 +74,7 @@ func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
 	//useSearchEngine := false
 
 	sha256 := calcolaSha256(myimg.Path)
-	fmt.Printf("sha256 %s", sha256)
+	fmt.Printf("image: %s, sha256 %s\n", myimg.Path, sha256)
 	/*
 		if useSearchEngine {
 			searchClient := SolrClient{host: "http://localhost:8983/solr"}

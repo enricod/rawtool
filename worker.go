@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 // NewWorker creates, and returns a new Worker object. Its only argument
@@ -37,15 +36,12 @@ func (w *Worker) Start() {
 
 			select {
 			case workRequest := <-w.WorkRequestChan:
-				// Receive a work request.
-				fmt.Printf("  worker%d: Received work request, delaying for %f seconds\n", w.ID, workRequest.Delay.Seconds())
-
-				time.Sleep(workRequest.Delay)
-				fmt.Printf("    worker%d: Hello, %s!\n", w.ID, workRequest.SourceFileName)
+				fmt.Printf("    worker%d | richiesta elaborazione  %s\n", w.ID, workRequest.SourceImage.Filename)
+				ProcessMyimage(workRequest.SourceImage, appSettings)
 
 			case <-w.QuitChan:
 				// We have been asked to stop.
-				fmt.Printf("worker%d stopping\n", w.ID)
+				fmt.Printf("    worker%d | stopping\n", w.ID)
 				return
 			}
 		}

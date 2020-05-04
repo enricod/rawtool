@@ -49,12 +49,10 @@ func ProcessDir(dirname string, appSettings Settings) {
 	for index, img := range images {
 		log.Printf("step %d/%d, processing image %s", index+1, len(images), img.Filename)
 
-		workReq := WorkRequest{SourceFileName: img.Filename, Delay: 10}
+		workReq := WorkRequest{SourceImage: img, Delay: 10}
 
 		// Push the work onto the queue.
 		WorkQueueWorkRequestChan <- workReq
-
-		//rtimage.ProcessMyimage(img, appSettings)
 	}
 
 }
@@ -153,7 +151,7 @@ func main() {
 
 	StartDispatcher(4)
 
-	//rtimage.OpenDB(appSettings)
 	ProcessDir(dir, appSettings)
-	//rtimage.CloseDB()
+
+	time.Sleep(100000 * time.Millisecond)
 }

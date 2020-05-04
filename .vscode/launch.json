@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {},
-            "args": ["-d", "/data1/Pictures/"]
+            "args": ["-d", "/home/enrico/Pictures/raw_samples"]
         }
     ]
 }

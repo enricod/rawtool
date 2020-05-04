@@ -27,11 +27,10 @@ func StartDispatcher(nworkers int) {
 			// WorkQueueWorkRequestChan è creato dal Collector
 			case workReq := <-WorkQueueWorkRequestChan:
 				// attende work request passate dal Collector
-				fmt.Println("Received work request ", workReq.SourceFileName)
 				go func() {
 					worker := <-WorkerQueueChanChan
 
-					fmt.Println("Dispatching work request ", workReq.SourceFileName)
+					fmt.Println("Dispatching work request ", workReq.SourceImage.Filename)
 					worker <- workReq
 				}()
 			}
