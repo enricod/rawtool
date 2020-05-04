@@ -20,7 +20,7 @@ import (
 
 // RawExtensions elenco delle estensioni dei file raw
 func RawExtensions() []string {
-	return []string{".ORF", ".CR2", ".RAF", ".ARW"}
+	return []string{".ORF", ".CR2", ".RAF", ".ARW", ".NEF"}
 }
 
 // MyImage struct used to save informations about the image which is processed
