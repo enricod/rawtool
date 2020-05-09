@@ -2,10 +2,12 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -73,8 +75,7 @@ func ProcessMyimage(myimg MyImage, settings Settings) (MyImage, error) {
 	//picturesColl := database.Use("Pictures")
 	//useSearchEngine := false
 
-	sha256 := calcolaSha256(myimg.Path)
-	fmt.Printf("image: %s, sha256 %s\n", myimg.Path, sha256)
+	// fmt.Printf("image: %s, sha256 %s\n", myimg.Path, sha256)
 	/*
 		if useSearchEngine {
 			searchClient := SolrClient{host: "http://localhost:8983/solr"}
@@ -157,14 +158,22 @@ func IsStringInSlice(a string, list []string) bool {
 	return false
 }
 
+type OutfileData struct {
+	SourceFileName   string
+	SourceDir        string
+	SourceHash       string
+	ParsingTimestamp int64
+}
+
 func writeThumb(outDir string, filename string, img *image.Image, settings Settings) error {
 	t0 := time.Now()
 	var opt jpeg.Options
 	opt.Quality = 75
-	// ok, write out the data into the new JPEG file
+
 	// perchè serve questo??
 	rand.Seed(time.Now().UTC().UnixNano())
 	outfilename := fmt.Sprintf("%s/%s.thumb.jpg", outDir, filename)
+	outJSONFilename := fmt.Sprintf("%s/%s.thumb.json", outDir, filename)
 	os.MkdirAll(outDir, os.ModePerm)
 
 	out, err := os.Create(outfilename)
@@ -179,5 +188,18 @@ func writeThumb(outDir string, filename string, img *image.Image, settings Setti
 		return err
 	}
 	log.Printf("created and saved thumbnail %s , required %v", outfilename, time.Since(t0))
+
+	sha256 := calcolaSha256(settings.ImagesDir + "/" + filename)
+	outfileData := OutfileData{
+		SourceFileName:   settings.ImagesDir + "/" + filename,
+		SourceDir:        settings.ImagesDir,
+		SourceHash:       sha256,
+		ParsingTimestamp: time.Now().Unix(),
+	}
+	b, err := json.Marshal(outfileData)
+	err = ioutil.WriteFile(outJSONFilename, b, 0644)
+	if err != nil {
+		log.Printf("errore in salvataggio dati output %s", err.Error())
+	}
 	return nil
 }
