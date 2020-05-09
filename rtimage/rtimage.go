@@ -1,9 +1,6 @@
 package rtimage
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/HouzuoGuo/tiedot/db"
 	// "github.com/HouzuoGuo/tiedot/db"
 	//	"github.com/HouzuoGuo/tiedot/dberr"
@@ -20,15 +17,9 @@ type SearchEngine interface {
 	save(doc SearchDoc)
 }
 
-// JobQueue make a channel with a capacity of 100.
-type JobQueue struct {
-	Settings                Settings
-	numeroImmaginiElaborate int
-	JobChan                 chan MyImage
-}
-
 var database *db.DB
 
+/*
 func OpenDB(appSettings Settings) *db.DB {
 	if database == nil {
 		_db, err := db.OpenDB(fmt.Sprintf("%s/_db", appSettings.WorkDir))
@@ -54,3 +45,4 @@ func OpenDB(appSettings Settings) *db.DB {
 func CloseDB() {
 	database.Close()
 }
+*/

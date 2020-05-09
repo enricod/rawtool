@@ -30,7 +30,7 @@ func StartDispatcher(nworkers int) {
 				go func() {
 					worker := <-WorkerQueueChanChan
 
-					fmt.Println("Dispatching work request ", workReq.SourceImage.Filename)
+					//fmt.Println("Dispatching work request ", workReq.SourceImage.Filename)
 					worker <- workReq
 				}()
 			}

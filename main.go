@@ -3,17 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image"
-	"image/jpeg"
 	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 const thumbSize = 1280
+const workersNo = 4
 
 var images []MyImage
 
@@ -24,6 +21,7 @@ type Settings struct {
 	ImagesDir string // directory with images
 	WorkDir   string // directory where are saved the thumbnails
 	Recursive bool
+	NoGui     bool
 }
 
 func createDirIfNotExist(dir string) {
@@ -41,8 +39,9 @@ func createWorkDirIfNecessary(_appSettings Settings) {
 }
 
 // ProcessDir elabora immagini in directory
-func ProcessDir(dirname string, appSettings Settings) {
-	imagesInWorkDir, _ := readImagesInDir(dirname)
+func ProcessDir(appSettings Settings) {
+
+	imagesInWorkDir, _ := readImagesInDir(appSettings.ImagesDir)
 	images = imagesInWorkDir
 
 	log.Printf("found %d images ", len(images))
@@ -82,13 +81,11 @@ func readImagesInDir(dirname string) ([]MyImage, error) {
 		}
 
 		if info.IsDir() && IsStringInSlice(info.Name(), skipDirs) {
-			//fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
 
 		ext := filepath.Ext(path)
 		if strings.ToUpper(ext) == ".JPG" || IsStringInSlice(ext, RawExtensions()) {
-
 			result = append(result, MyImage{Path: path, Filename: info.Name()})
 		}
 
@@ -112,29 +109,13 @@ func isImage(filename string) bool {
 	return false
 }
 
-func writeAsJpeg(filename os.FileInfo, img image.Image) error {
-	var opt jpeg.Options
-
-	opt.Quality = 80
-	// ok, write out the data into the new JPEG file
-
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	out, err := os.Create("./.rawtool/out.jpg")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	err = jpeg.Encode(out, img, &opt) // put quality to 80%
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	return nil
+func PrepareScan(appSettings Settings) {
+	StartDispatcher(workersNo)
 }
 
 func main() {
+
+	nogui := flag.Bool("nogui", false, "no GUI")
 	//defer profile.Start(profile.MemProfile).Stop()
 	imagesdir := flag.String("d", ".", "imagesdir")
 	flag.Parse()
@@ -147,11 +128,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	appSettings = Settings{ImagesDir: *imagesdir, WorkDir: *outdir}
+	appSettings = Settings{
+		ImagesDir: dir,
+		WorkDir:   *outdir,
+		NoGui:     *nogui}
 
-	StartDispatcher(4)
-
-	ProcessDir(dir, appSettings)
-
-	time.Sleep(100000 * time.Millisecond)
+	log.Printf("dir imaggini: %s", appSettings.ImagesDir)
+	PrepareScan(appSettings)
+	if *nogui {
+		ProcessDir(appSettings)
+	} else {
+		startGui()
+	}
 }
