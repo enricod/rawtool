@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -196,8 +195,11 @@ func writeThumb(outDir string, filename string, img *image.Image, settings Setti
 		SourceHash:       sha256,
 		ParsingTimestamp: time.Now().Unix(),
 	}
-	b, err := json.Marshal(outfileData)
-	err = ioutil.WriteFile(outJSONFilename, b, 0644)
+	b, err := json.MarshalIndent(outfileData, "", "    ")
+	f, err := os.Create(outJSONFilename)
+	defer f.Close()
+	f.Write(b)
+	log.Printf("created and saved JSON  %s , required %v", outJSONFilename, time.Since(t0))
 	if err != nil {
 		log.Printf("errore in salvataggio dati output %s", err.Error())
 	}
