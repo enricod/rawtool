@@ -36,7 +36,7 @@ func scegliDir(btn *gtk.Button) {
 	dialog.Destroy()
 }
 
-func startGui() {
+func startGUI() {
 	// Initialize GTK without parsing any command line arguments.
 	gtk.Init(nil)
 

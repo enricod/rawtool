@@ -40,7 +40,6 @@ func createWorkDirIfNecessary(_appSettings Settings) {
 
 // ProcessDir elabora immagini in directory
 func ProcessDir(appSettings Settings) {
-
 	imagesInWorkDir, _ := readImagesInDir(appSettings.ImagesDir)
 	images = imagesInWorkDir
 
@@ -53,7 +52,6 @@ func ProcessDir(appSettings Settings) {
 		// Push the work onto the queue.
 		WorkQueueWorkRequestChan <- workReq
 	}
-
 }
 
 func intMin(a int, b int) int {
@@ -109,7 +107,7 @@ func isImage(filename string) bool {
 	return false
 }
 
-func PrepareScan(appSettings Settings) {
+func prepareScan(appSettings Settings) {
 	StartDispatcher(workersNo)
 }
 
@@ -133,11 +131,13 @@ func main() {
 		WorkDir:   *outdir,
 		NoGui:     *nogui}
 
-	log.Printf("dir imaggini: %s", appSettings.ImagesDir)
-	PrepareScan(appSettings)
+	log.Println("-----------------")
+	log.Printf("dir immagini: %s", appSettings.ImagesDir)
+
+	prepareScan(appSettings)
 	if *nogui {
 		ProcessDir(appSettings)
 	} else {
-		startGui()
+		startGUI()
 	}
 }
