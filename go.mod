@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/HouzuoGuo/tiedot v0.0.0-20200330175510-6fb216206052
-	github.com/enricod/golibraw v0.0.0-20200509153907-a602e238996f
+	github.com/enricod/golibraw v0.0.0-20200509154432-7c53329c8ab6
 	github.com/gotk3/gotk3 v0.4.0
 	github.com/lmittmann/ppm v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
